@@ -1,106 +1,41 @@
-import { useState} from "react";
-import type { FormEvent } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { login } from "../auth/auth";
 
 const Login = () => {
-    const [email, setEmail] = useState<string>("");
-    const [password, setPassword] = useState<string>("");
-    const [error, setError] = useState<string>("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const navigate = useNavigate();
 
-    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+    const handleLogin = () => {
+        const success = login(email, password);
 
-    // Anggap akun sudah ada
-    const dummyEmail = "admin@gmail.com";
-    const dummyPassword = "123456";
+        if (success) {
+            navigate("/quiz");
+        } else {
+            alert("Login gagal");
+        }
+    };
 
-    if (email === dummyEmail && password === dummyPassword) {
-        alert("Login berhasil 🎉");
-        setError("");
-    } else {
-        setError("Email atau password salah");
-    }
-};
+    return (
+        <div>
+        <h1>Login</h1>
 
-return (
-    <div style={containerStyle}>
-        <form onSubmit={handleSubmit} style={cardStyle}>
-        <h2 style={{
-            textAlign:"center"
-        }}>Login</h2>
-        <div style={{marginTop:"12px",
-            display:"flex",
-            flexDirection:"column"
-        }}>
-            <label htmlFor="email">Email</label>
-            <input
-                type="email"
-                placeholder="****@gmail.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={inputStyle}
-                required
-            />
-        </div>
+        <input
+            type="email"
+            placeholder="Email"
+            onChange={(e) => setEmail(e.target.value)}
+        />
 
-        <div style={{marginTop:"12px",
-            display:"flex",
-            flexDirection:"column",
-        }}>
-            <label htmlFor="password">Password</label>
-            <input
-                type="password"
-                placeholder="****"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={inputStyle}
-                required
-            />
+        <input
+            type="password"
+            placeholder="Password"
+            onChange={(e) => setPassword(e.target.value)}
+        />
 
-        </div>
-
-        {error && <p style={{ color: "red", marginTop: "8px" }}>{error}</p>}
-
-            <button type="submit" style={buttonStyle}>
-            Login
-            </button>
-        </form>
+        <button onClick={handleLogin}>Login</button>
         </div>
     );
 };
 
 export default Login;
-
-const containerStyle: React.CSSProperties = {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100vh",
-    backgroundColor: "#f3f4f6",
-};
-
-const cardStyle: React.CSSProperties = {
-    width: "320px",
-    padding: "24px",
-    borderRadius: "12px",
-    backgroundColor: "#ffffff",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-    display: "flex",
-    flexDirection: "column",
-};
-
-const inputStyle: React.CSSProperties = {
-    padding: "10px",
-    marginTop: "12px",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
-};
-
-const buttonStyle: React.CSSProperties = {
-    marginTop: "16px",
-    padding: "10px",
-    borderRadius: "6px",
-    border: "none",
-    backgroundColor: "#2563eb",
-    color: "#ffffff",
-    cursor: "pointer",
-};

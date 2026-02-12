@@ -1,120 +1,52 @@
-import { useEffect, useState, useRef } from "react";
-import "./quiz.css";
-
-interface Question {
-  question: string;
-  correct_answer: string;
-  incorrect_answers: string[];
-  options: string[];
-}
-
-const shuffleArray = (array: string[]) => {
-  return [...array].sort(() => Math.random() - 0.5);
-};
+import { useState } from "react";
+import { useFetch } from "../hooks/useFetch";
+import { fetchQuestions } from "../services/api";
+import type { Question } from "../types/question";
+import QuestionCard from "../components/QuestionCard";
+import ProgressBar from "../components/progressBar";
+import Result from "./result";
+import { logout } from "../auth/auth";
 
 const Quiz = () => {
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const { data, loading, error } =
+    useFetch<Question[]>(fetchQuestions);
+
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const hasFetched = useRef(false);
-  const [answers, setAnswers] = useState<String[]>([]);
-
-  useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-
-    const fetchQuestions = async () => {
-      const res = await fetch(
-        "https://opentdb.com/api.php?amount=10&category=18&type=multiple"
-      );
-      const data = await res.json();
-
-      const formatted = data.results.map((q: any) => ({
-        ...q,
-        options: shuffleArray([
-          q.correct_answer,
-          ...q.incorrect_answers,
-        ]),
-      }));
-
-      setQuestions(formatted);
-      setLoading(false);
-    };
-
-    fetchQuestions();
-  }, []);
+  const [score, setScore] = useState(0);
+  const [finished, setFinished] = useState(false);
 
   if (loading) return <p>Loading...</p>;
-  if (questions.length === 0) return <p>Tidak ada soal</p>;
+  if (error) return <p>{error}</p>;
+  if (!data) return null;
 
-  const handleSubmit = () => {
-  let score = 0;
-  questions.forEach((q, index) => {
-    if (answers[index] === q.correct_answer) {
-      score++;
+  const handleAnswer = (answer: string) => {
+    if (answer === data[currentIndex].correct_answer) {
+      setScore((prev) => prev + 1);
     }
-  })
-};
-  const handleNext = () => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setSelected(null); // reset pilihan untuk soal berikutnya
+
+    if (currentIndex === data.length - 1) {
+      setFinished(true);
+    } else {
+      setCurrentIndex((prev) => prev + 1);
     }
   };
 
-  const handleBack = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex-1);
-      setSelected(null);
-    }
+  const progress = ((currentIndex + 1) / data.length) * 100;
+
+  if (finished) {
+    return <Result score={score} total={data.length} />;
   }
 
-  const question = questions[currentIndex];
-  const progress = ((currentIndex + 1) / questions.length) * 100;
-
-
   return (
-    <div className="quiz-container">
-      <h2 className="title">Fantasy Quiz #{currentIndex + 1}</h2>
+    <div>
+      <button onClick={logout}>Logout</button>
 
-      <div className="progress-wrapper">
-        <div
-          className="progress-bar"
-          style={{ width: `${progress}%` }}
-        />
-        <span>
-          {currentIndex + 1}/{questions.length}
-        </span>
-      </div>
+      <ProgressBar progress={progress} />
 
-      <h3
-        className="question"
-        dangerouslySetInnerHTML={{ __html: question.question }}
+      <QuestionCard
+        question={data[currentIndex]}
+        onAnswer={handleAnswer}
       />
-
-      <div className="options">
-        {question.options.map((opt, index) => (
-          <div
-            key={index}
-            className={`option-card ${
-              selected === opt ? "selected" : ""
-            }`}
-            onClick={() => setSelected(opt)}
-          >
-            {selected === opt && <span className="check"></span>}
-            <span dangerouslySetInnerHTML={{ __html: opt }} />
-          </div>
-        ))}
-      </div >
-      <div className="buttons"
-      style={{
-        display:"flex",
-        flexDirection:"row"
-      }}>
-        <button className="back-btn" onClick={handleBack}>BACK</button>
-        <button className="next-btn" onClick={currentIndex === questions.length-1?handleSubmit: handleNext}>{currentIndex === questions.length - 1? "FINISH": "NEXT"}</button>
-      </div>
     </div>
   );
 };
